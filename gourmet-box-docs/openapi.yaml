@@ -1,0 +1,759 @@
+openapi: 3.0.3
+info:
+  title: Gourmet Box MVP API
+  version: 1.0.0
+  description: |
+    Проект контракта. Реализация сервера отсутствует. Деньги в копейках RUB.
+    Все POST требуют Idempotency-Key; TTL 24 часа, scope actorId + operationId.
+    Повтор с тем же телом возвращает исходный ответ; с другим — 409.
+    JWT выдаёт внешний identity provider. Сотрудник ограничен membership заведения.
+    Чужие заказы и ресурсы сотрудника возвращают 404. Публичные ответы не содержат кодов выдачи.
+    Все ошибки имеют Error. Для всех операций возможны 429 и 500 через default.
+servers:
+  - url: https://api.gourmet-box.example/v1
+    description: Иллюстративный адрес, не работающий сервер
+tags:
+  - name: Catalog
+    description: Публичные карточки и каталог
+  - name: Inventory
+    description: Партии продуктов и их балансы
+  - name: Offers
+    description: Черновики и публикация боксов
+  - name: Orders
+    description: Бронирование и получение
+  - name: Reporting
+    description: История и мини-аналитика
+security:
+  - bearerAuth: []
+paths:
+  /venues/{venueId}:
+    parameters:
+      - $ref: '#/components/parameters/VenueId'
+    get:
+      operationId: getVenue
+      tags: [Catalog]
+      summary: Получить публичные сведения о заведении
+      security: []
+      responses:
+        '200':
+          description: Заведение
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Venue'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /offers:
+    get:
+      operationId: listOffers
+      tags: [Catalog]
+      summary: Доступные для новой брони боксы
+      description: Только PUBLISHED, availableBoxes > 0 и now ≤ pickupWindowEnd − 15 минут.
+      security: []
+      parameters:
+        - in: query
+          name: venueId
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Страница боксов
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/Offer'}}
+                  nextCursor: {type: string, nullable: true}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /offers/{offerId}:
+    parameters:
+      - $ref: '#/components/parameters/OfferId'
+    get:
+      operationId: getOffer
+      tags: [Catalog]
+      summary: Карточка опубликованного или закрытого бокса
+      description: DRAFT публично недоступен. Закрытый бокс доступен для просмотра без возможности брони.
+      security: []
+      responses:
+        '200':
+          description: Карточка
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Offer'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /venues/{venueId}/batches:
+    parameters:
+      - $ref: '#/components/parameters/VenueId'
+    get:
+      operationId: listBatches
+      tags: [Inventory]
+      summary: Партии и балансы своего заведения
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Партии
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/Batch'}}
+                  nextCursor: {type: string, nullable: true}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+    post:
+      operationId: createBatch
+      tags: [Inventory]
+      summary: Создать неизменяемую партию
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BatchInput'}
+      responses:
+        '201':
+          description: Создано
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Batch'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /venues/{venueId}/offers:
+    parameters:
+      - $ref: '#/components/parameters/VenueId'
+    get:
+      operationId: listVenueOffers
+      tags: [Offers]
+      summary: Все боксы заведения, включая черновики
+      parameters:
+        - in: query
+          name: status
+          schema: {$ref: '#/components/schemas/OfferStatus'}
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Боксы
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/Offer'}}
+                  nextCursor: {type: string, nullable: true}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+    post:
+      operationId: createOffer
+      tags: [Offers]
+      summary: Создать черновик
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/OfferInput'}
+      responses:
+        '201':
+          description: Черновик создан
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Offer'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /venues/{venueId}/offers/{offerId}:
+    parameters:
+      - $ref: '#/components/parameters/VenueId'
+      - $ref: '#/components/parameters/OfferId'
+    patch:
+      operationId: updateDraft
+      tags: [Offers]
+      summary: Полностью заменить редактируемые поля черновика
+      description: Все поля OfferInput обязательны; expectedVersion защищает от потери обновлений. Повтор со старой версией даёт 409.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/OfferInput'
+                - type: object
+                  required: [expectedVersion]
+                  properties:
+                    expectedVersion: {type: integer, minimum: 1}
+      responses:
+        '200':
+          description: Обновлено
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Offer'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /venues/{venueId}/offers/{offerId}/price-quotes:
+    parameters:
+      - $ref: '#/components/parameters/VenueId'
+      - $ref: '#/components/parameters/OfferId'
+    post:
+      operationId: quotePrice
+      tags: [Offers]
+      summary: Проверить допустимость и рассчитать цену черновика
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Рекомендация, действующая 5 минут; при недопустимости 422 с деталями
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PriceQuote'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /venues/{venueId}/offers/{offerId}/publish:
+    parameters:
+      - $ref: '#/components/parameters/VenueId'
+      - $ref: '#/components/parameters/OfferId'
+    post:
+      operationId: publishOffer
+      tags: [Offers]
+      summary: Подтвердить цену и атомарно выделить продукты
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quoteId, expectedVersion, priceMinor]
+              properties:
+                quoteId: {type: string, format: uuid}
+                expectedVersion: {type: integer, minimum: 1}
+                priceMinor: {type: integer, format: int64, minimum: 100}
+                overrideReason: {type: string, minLength: 3, maxLength: 500, description: Обязательно при отклонении от рекомендации}
+      responses:
+        '200':
+          description: Опубликовано
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Offer'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /venues/{venueId}/offers/{offerId}/close:
+    parameters:
+      - $ref: '#/components/parameters/VenueId'
+      - $ref: '#/components/parameters/OfferId'
+    post:
+      operationId: closeOffer
+      tags: [Offers]
+      summary: Закрыть продажи, сохранив активные брони
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Reason'}
+      responses:
+        '200':
+          description: Закрыто, свободное выделение освобождено
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Offer'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /orders:
+    get:
+      operationId: listMyOrders
+      tags: [Orders]
+      summary: Мои брони и история заказов
+      parameters:
+        - $ref: '#/components/parameters/OrderStatusFilter'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200': {$ref: '#/components/responses/OrderList'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+    post:
+      operationId: createOrder
+      tags: [Orders]
+      summary: Забронировать боксы и выбрать время получения
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [offerId, quantity, pickupAt, paymentMethod]
+              properties:
+                offerId: {type: string, format: uuid}
+                quantity: {type: integer, minimum: 1, maximum: 5}
+                pickupAt: {type: string, format: date-time, description: Внутри окна и не раньше now + 15 минут}
+                paymentMethod: {$ref: '#/components/schemas/PaymentMethod'}
+      responses:
+        '201':
+          description: Бронь создана
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Order'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /orders/{orderId}:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    get:
+      operationId: getOrder
+      tags: [Orders]
+      summary: Заказ владельца или сотрудника соответствующего заведения
+      responses:
+        '200':
+          description: Заказ
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Order'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /orders/{orderId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      operationId: cancelOrder
+      tags: [Orders]
+      summary: Отменить RESERVED; покупатель до pickupAt, продавец в любое время
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Reason'}
+      responses:
+        '200': {$ref: '#/components/responses/OrderResult'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /orders/{orderId}/fulfill:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      operationId: fulfillOrder
+      tags: [Orders]
+      summary: Сотрудник подтверждает выдачу внутри окна получения
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pickupCode]
+              properties:
+                pickupCode: {type: string, pattern: '^[0-9]{6}$'}
+      responses:
+        '200': {$ref: '#/components/responses/OrderResult'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /orders/{orderId}/no-show:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      operationId: markNoShow
+      tags: [Orders]
+      summary: Сотрудник отмечает неявку начиная с noShowEligibleAt
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Reason'}
+      responses:
+        '200': {$ref: '#/components/responses/OrderResult'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /orders/{orderId}/events:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    get:
+      operationId: listOrderEvents
+      tags: [Reporting]
+      summary: События заказа для владельца или сотрудника заведения
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200': {$ref: '#/components/responses/EventList'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /venues/{venueId}/orders:
+    parameters:
+      - $ref: '#/components/parameters/VenueId'
+    get:
+      operationId: listVenueOrders
+      tags: [Orders]
+      summary: Заказы заведения; from/to фильтруют pickupAt по [from,to)
+      parameters:
+        - $ref: '#/components/parameters/OrderStatusFilter'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200': {$ref: '#/components/responses/OrderList'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /venues/{venueId}/events:
+    parameters:
+      - $ref: '#/components/parameters/VenueId'
+    get:
+      operationId: listVenueEvents
+      tags: [Reporting]
+      summary: Журнал заведения; фильтр по occurredAt, переход из аналитики по event type
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - in: query
+          name: type
+          schema: {$ref: '#/components/schemas/EventType'}
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200': {$ref: '#/components/responses/EventList'}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /venues/{venueId}/analytics:
+    parameters:
+      - $ref: '#/components/parameters/VenueId'
+    get:
+      operationId: getAnalytics
+      tags: [Reporting]
+      summary: Мини-аналитика по событиям периода, максимум 90 суток
+      description: from < to. activeReservedOrders — текущий срез; остальные показатели — события [from,to). День в timezone заведения.
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+      responses:
+        '200':
+          description: Показатели
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [from, to, timezone, asOf, activeReservedOrders, totals, daily]
+                properties:
+                  from: {type: string, format: date-time}
+                  to: {type: string, format: date-time}
+                  timezone: {type: string, example: Europe/Samara}
+                  asOf: {type: string, format: date-time}
+                  activeReservedOrders: {type: integer, minimum: 0}
+                  totals: {$ref: '#/components/schemas/Metrics'}
+                  daily:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/Metrics'
+                        - type: object
+                          required: [date]
+                          properties:
+                            date: {type: string, format: date}
+        '400': {$ref: '#/components/responses/Failure'}
+        '404': {$ref: '#/components/responses/Failure'}
+        '409': {$ref: '#/components/responses/Failure'}
+        '422': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+  parameters:
+    VenueId: {in: path, name: venueId, required: true, schema: {type: string, format: uuid}}
+    OfferId: {in: path, name: offerId, required: true, schema: {type: string, format: uuid}}
+    OrderId: {in: path, name: orderId, required: true, schema: {type: string, format: uuid}}
+    IdempotencyKey: {in: header, name: Idempotency-Key, required: true, schema: {type: string, format: uuid}}
+    Cursor: {in: query, name: cursor, schema: {type: string, maxLength: 2048}, description: 'Непрозрачный курсор; сортировка createdAt/id DESC, для событий occurredAt/id DESC'}
+    Limit: {in: query, name: limit, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+    From: {in: query, name: from, required: true, schema: {type: string, format: date-time}, description: Включительная граница}
+    To: {in: query, name: to, required: true, schema: {type: string, format: date-time}, description: Исключительная граница; больше from}
+    OrderStatusFilter: {in: query, name: status, schema: {$ref: '#/components/schemas/OrderStatus'}}
+  responses:
+    Failure:
+      description: 'Ошибка: 400 формат; 401 токен; 403 роль; 404 объект; 409 конфликт; 422 правило; 429 лимит; 500 сбой. code уточняет причину.'
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example: {code: INSUFFICIENT_STOCK, message: Недостаточно доступных боксов, requestId: demo-request, details: [{field: quantity, reason: availableBoxes=0}]}
+    OrderResult:
+      description: Заказ после перехода
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Order'}
+    OrderList:
+      description: Страница заказов
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [items, nextCursor]
+            properties:
+              items: {type: array, items: {$ref: '#/components/schemas/Order'}}
+              nextCursor: {type: string, nullable: true}
+    EventList:
+      description: Страница событий
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [items, nextCursor]
+            properties:
+              items: {type: array, items: {$ref: '#/components/schemas/Event'}}
+              nextCursor: {type: string, nullable: true}
+  schemas:
+    Venue:
+      type: object
+      required: [id, name, address, timezone]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        address: {type: string}
+        timezone: {type: string, example: Europe/Samara}
+    BatchInput:
+      type: object
+      required: [name, receivedUnits, originalUnitPriceMinor, expiresAt, storageConfirmed, allergens]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 200}
+        receivedUnits: {type: integer, minimum: 1, maximum: 100000}
+        originalUnitPriceMinor: {type: integer, format: int64, minimum: 1, maximum: 100000000}
+        expiresAt: {type: string, format: date-time}
+        sellByAt: {type: string, format: date-time, nullable: true}
+        storageConfirmed: {type: boolean}
+        allergens: {type: string, minLength: 1, maxLength: 1000}
+    Batch:
+      allOf:
+        - $ref: '#/components/schemas/BatchInput'
+        - type: object
+          required: [id, venueId, freeUnits, allocatedUnits, consumedUnits, createdAt]
+          properties:
+            id: {type: string, format: uuid}
+            venueId: {type: string, format: uuid}
+            freeUnits: {type: integer, minimum: 0}
+            allocatedUnits: {type: integer, minimum: 0}
+            consumedUnits: {type: integer, minimum: 0}
+            createdAt: {type: string, format: date-time}
+    OfferInput:
+      type: object
+      required: [title, totalBoxes, items, pickupWindowStart, pickupWindowEnd]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 200}
+        totalBoxes: {type: integer, minimum: 1, maximum: 10000}
+        items:
+          type: array
+          minItems: 1
+          maxItems: 30
+          description: batchId уникален внутри массива
+          items:
+            type: object
+            required: [batchId, unitsPerBox]
+            properties:
+              batchId: {type: string, format: uuid}
+              unitsPerBox: {type: integer, minimum: 1, maximum: 1000}
+        pickupWindowStart: {type: string, format: date-time}
+        pickupWindowEnd: {type: string, format: date-time}
+    ItemSnapshot:
+      type: object
+      required: [name, unitsPerBox, originalUnitPriceMinor, allergens, effectiveDeadline]
+      properties:
+        name: {type: string}
+        unitsPerBox: {type: integer, minimum: 1}
+        originalUnitPriceMinor: {type: integer, format: int64}
+        allergens: {type: string}
+        effectiveDeadline: {type: string, format: date-time}
+    OfferStatus: {type: string, enum: [DRAFT, PUBLISHED, CLOSED]}
+    Offer:
+      type: object
+      required: [id, venueId, title, status, version, totalBoxes, reservedBoxes, fulfilledBoxes, availableBoxes, items, priceMinor, originalPriceMinor, currency, pickupWindowStart, pickupWindowEnd, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        venueId: {type: string, format: uuid}
+        title: {type: string}
+        status: {$ref: '#/components/schemas/OfferStatus'}
+        version: {type: integer, minimum: 1}
+        totalBoxes: {type: integer, minimum: 1}
+        reservedBoxes: {type: integer, minimum: 0}
+        fulfilledBoxes: {type: integer, minimum: 0}
+        availableBoxes: {type: integer, minimum: 0, description: При CLOSED и DRAFT всегда 0; при PUBLISHED total-reserved-fulfilled}
+        items: {type: array, items: {$ref: '#/components/schemas/ItemSnapshot'}}
+        draftItems:
+          type: array
+          description: Только сотруднику для DRAFT, для редактирования связей с партиями
+          items:
+            type: object
+            required: [batchId, unitsPerBox]
+            properties:
+              batchId: {type: string, format: uuid}
+              unitsPerBox: {type: integer, minimum: 1}
+        priceMinor: {type: integer, format: int64, nullable: true, description: null до публикации}
+        originalPriceMinor: {type: integer, format: int64}
+        currency: {type: string, enum: [RUB]}
+        pickupWindowStart: {type: string, format: date-time}
+        pickupWindowEnd: {type: string, format: date-time}
+        createdAt: {type: string, format: date-time}
+    PriceQuote:
+      type: object
+      required: [id, offerId, draftVersion, ruleVersion, calculatedAt, expiresAt, originalPriceMinor, recommendedPriceMinor, discountPercent, explanation]
+      properties:
+        id: {type: string, format: uuid}
+        offerId: {type: string, format: uuid}
+        draftVersion: {type: integer}
+        ruleVersion: {type: string, example: mvp-1}
+        calculatedAt: {type: string, format: date-time}
+        expiresAt: {type: string, format: date-time}
+        originalPriceMinor: {type: integer, format: int64}
+        recommendedPriceMinor: {type: integer, format: int64}
+        discountPercent: {type: integer, enum: [30, 40, 50, 60]}
+        explanation: {type: string, example: До ближайшего предела 5 часов — скидка 50%}
+    PaymentMethod: {type: string, enum: [AT_PICKUP, ONLINE_LATER], description: Оба варианта — заглушка без списания денег}
+    OrderStatus: {type: string, enum: [RESERVED, FULFILLED, CANCELLED, NO_SHOW]}
+    Order:
+      type: object
+      required: [id, venueId, offerId, status, quantity, unitPriceMinor, totalPriceMinor, originalTotalMinor, currency, items, pickupAt, pickupWindowStart, pickupWindowEnd, noShowEligibleAt, paymentMethod, paymentStatus, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        venueId: {type: string, format: uuid}
+        offerId: {type: string, format: uuid}
+        status: {$ref: '#/components/schemas/OrderStatus'}
+        quantity: {type: integer, minimum: 1, maximum: 5}
+        unitPriceMinor: {type: integer, format: int64}
+        totalPriceMinor: {type: integer, format: int64}
+        originalTotalMinor: {type: integer, format: int64}
+        currency: {type: string, enum: [RUB]}
+        items: {type: array, items: {$ref: '#/components/schemas/ItemSnapshot'}, description: Состав одного бокса на момент брони}
+        pickupAt: {type: string, format: date-time}
+        pickupWindowStart: {type: string, format: date-time}
+        pickupWindowEnd: {type: string, format: date-time}
+        noShowEligibleAt: {type: string, format: date-time}
+        pickupCode: {type: string, pattern: '^[0-9]{6}$', description: Только покупателю для RESERVED; сотруднику не возвращается}
+        paymentMethod: {$ref: '#/components/schemas/PaymentMethod'}
+        paymentStatus: {type: string, enum: [NOT_PROCESSED]}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        completedAt: {type: string, format: date-time, nullable: true}
+    Reason:
+      type: object
+      required: [reason]
+      properties:
+        reason: {type: string, minLength: 3, maxLength: 500}
+    EventType: {type: string, enum: [BATCH_CREATED, OFFER_CREATED, OFFER_UPDATED, OFFER_PUBLISHED, OFFER_CLOSED, ORDER_RESERVED, ORDER_FULFILLED, ORDER_CANCELLED, ORDER_NO_SHOW]}
+    Event:
+      type: object
+      required: [id, aggregateType, aggregateId, type, occurredAt, actorType]
+      properties:
+        id: {type: string, format: uuid}
+        aggregateType: {type: string, enum: [BATCH, OFFER, ORDER]}
+        aggregateId: {type: string, format: uuid}
+        type: {$ref: '#/components/schemas/EventType'}
+        occurredAt: {type: string, format: date-time}
+        actorType: {type: string, enum: [BUYER, STAFF, SYSTEM]}
+        reason: {type: string, nullable: true}
+      description: Публичная проекция события; actorId, секреты и внутренний payload не возвращаются
+    Metrics:
+      type: object
+      required: [createdOrders, fulfilledOrders, fulfilledBoxes, fulfilledValueMinor, originalValueMinor, discountValueMinor, noShowOrders, cancelledOrders, noShowRate]
+      properties:
+        createdOrders: {type: integer, minimum: 0}
+        fulfilledOrders: {type: integer, minimum: 0}
+        fulfilledBoxes: {type: integer, minimum: 0}
+        fulfilledValueMinor: {type: integer, format: int64, minimum: 0, description: 'Стоимость выданных заказов, не оплаченная выручка'}
+        originalValueMinor: {type: integer, format: int64, minimum: 0}
+        discountValueMinor: {type: integer, format: int64, minimum: 0}
+        noShowOrders: {type: integer, minimum: 0}
+        cancelledOrders: {type: integer, minimum: 0}
+        noShowRate: {type: number, minimum: 0, maximum: 1, nullable: true}
+    Error:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code:
+          type: string
+          description: Машинный код; перечень расширяемый
+          example: INSUFFICIENT_STOCK
+        message: {type: string}
+        requestId: {type: string}
+        details:
+          type: array
+          items:
+            type: object
+            required: [field, reason]
+            properties:
+              field: {type: string}
+              reason: {type: string}

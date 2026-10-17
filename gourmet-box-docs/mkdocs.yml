@@ -1,0 +1,26 @@
+site_name: Gourmet Box — MVP 1.0
+site_description: Требования, архитектура C4 и API
+docs_dir: docs
+theme:
+  name: mkdocs
+nav:
+  - Начало: index.md
+  - Требования: 01-requirements.md
+  - Архитектура и C4: 02-architecture.md
+  - Данные и транзакции: 03-data-and-flows.md
+  - Реализация и приёмка: 04-delivery.md
+  - Публикация: 05-documentation.md
+  - Руководство по API: 06-api-guide.md
+  - API: api.html
+plugins:
+  - search
+markdown_extensions:
+  - tables
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js
+  - assets/mermaid-init.js
