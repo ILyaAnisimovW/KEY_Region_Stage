@@ -3,5 +3,13 @@
   "slug": "gourmet-box-key-region-docs",
   "url": "https://gourmet-box-key-region-docs.ilyanisimov07.chatgpt.site",
   "purpose": "Static documentation portal",
-  "initial_audience": "owner-private"
+  "initial_audience": "owner-private",
+  "deployment": {
+    "id": "appgdep_6ad7134d92e08191b95c597003bc7cd6",
+    "version_id": "appgprj_6ad71172db788191a994f30bd9b5f02f~appgver_3fe0de923f3481918ed2153984ec0cc1",
+    "site_source_commit": "114413a9bdec86b25124b8e5b1a9e22a37f17ea6",
+    "github_source_commit": "6d2b7ddc3fdbd8082ed199774fcad1764ae21bfc",
+    "status": "succeeded",
+    "published_at": "2026-10-20T07:08:16.690948+00:00"
+  }
 }

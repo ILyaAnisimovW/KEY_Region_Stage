@@ -1,5 +1,7 @@
 # Gourmet Box
 
+[Сайт документации в Sites](https://gourmet-box-key-region-docs.ilyanisimov07.chatgpt.site) — опубликован с доступом только владельцу. Публичная документация также доступна в папке gourmet-box-docs этого GitHub-репозитория. Полный backend/Keycloak этой публикацией не развёрнут.
+
 Модуль авторизации по [спецификации MVP](gourmet-box-docs/README.md): внешний Identity Provider, Bearer JWT, локальные роли BUYER/STAFF, membership заведения и ownership заказа. NestJS + PostgreSQL + React; локальный вход через Keycloak.
 
 ## Что реализовано
