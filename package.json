@@ -1,0 +1,12 @@
+{
+  "name": "gourmet-box", "private": true, "version": "0.1.0",
+  "workspaces": ["apps/api", "apps/web"],
+  "engines": {"node": ">=22.12"},
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspace @gourmet-box/api",
+    "dev:api": "npm run dev --workspace @gourmet-box/api",
+    "dev:web": "npm run dev --workspace @gourmet-box/web",
+    "demo:setup": "node scripts/setup-demo.mjs"
+  }
+}

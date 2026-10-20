@@ -3,7 +3,7 @@ info:
   title: Gourmet Box MVP API
   version: 1.0.0
   description: |
-    Проект контракта. Реализация сервера отсутствует. Деньги в копейках RUB.
+    Контракт MVP. Реализованы /me, /health и модуль доступа; бизнес-маршруты ещё не реализованы. Деньги в копейках RUB.
     Все POST требуют Idempotency-Key; TTL 24 часа, scope actorId + operationId.
     Повтор с тем же телом возвращает исходный ответ; с другим — 409.
     JWT выдаёт внешний identity provider. Сотрудник ограничен membership заведения.
@@ -13,6 +13,8 @@ servers:
   - url: https://api.gourmet-box.example/v1
     description: Иллюстративный адрес, не работающий сервер
 tags:
+  - name: Access
+    description: Текущий доступ и состояние процесса
   - name: Catalog
     description: Публичные карточки и каталог
   - name: Inventory
@@ -26,6 +28,54 @@ tags:
 security:
   - bearerAuth: []
 paths:
+  /me:
+    get:
+      operationId: getMe
+      tags: [Access]
+      summary: Текущий пользователь и его назначенные заведения
+      description: Активный локальный пользователь по issuer/sub. Роли из PostgreSQL. Никаких чужих аккаунтов или внешних claims.
+      responses:
+        '200':
+          description: Текущий доступ
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, roles, venues]
+                properties:
+                  id: {type: string, format: uuid}
+                  roles:
+                    type: array
+                    items: {type: string, enum: [BUYER, STAFF]}
+                  venues:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, name]
+                      properties:
+                        id: {type: string, format: uuid}
+                        name: {type: string}
+        '401': {$ref: '#/components/responses/Failure'}
+        '403': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
+  /health:
+    get:
+      operationId: health
+      tags: [Access]
+      summary: Проверка процесса API, без проверки БД и провайдера
+      security: []
+      responses:
+        '200':
+          description: API запущен
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: {type: string, enum: [ok]}
+        '429': {$ref: '#/components/responses/Failure'}
+        default: {$ref: '#/components/responses/Failure'}
   /venues/{venueId}:
     parameters:
       - $ref: '#/components/parameters/VenueId'

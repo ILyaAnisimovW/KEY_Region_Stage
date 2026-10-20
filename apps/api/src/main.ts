@@ -1,0 +1,13 @@
+import 'reflect-metadata';
+import { NestFactory } from '@nestjs/core';
+import { AppModule, DATABASE_POOL } from './app.module.js';
+import { AUTH_CONFIG, type AuthConfig } from './config.js';
+import { configureHttp } from './http.js';
+import type { Pool } from 'pg';
+const app = await NestFactory.create(AppModule, { logger: ['error', 'warn'] });
+const config = app.get<AuthConfig>(AUTH_CONFIG);
+configureHttp(app, config);
+app.enableShutdownHooks();
+app.get<Pool>(DATABASE_POOL).on('error', () => console.error('Database connection unavailable'));
+await app.listen(config.port, '127.0.0.1');
+console.log(`Gourmet Box API: http://localhost:${config.port}/v1`);

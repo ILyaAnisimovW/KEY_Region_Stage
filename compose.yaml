@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: gourmet
+      POSTGRES_DB: gourmet
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run npm run demo:setup}
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["gourmet-db:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gourmet -d gourmet"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Run npm run demo:setup}
+      KC_HOSTNAME: http://localhost:8080
+    ports: ["127.0.0.1:8080:8080"]
+    volumes:
+      - ./infra/keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+      - keycloak-data:/opt/keycloak/data
+volumes:
+  gourmet-db:
+  keycloak-data:

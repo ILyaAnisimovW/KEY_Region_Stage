@@ -11,6 +11,8 @@ nav:
   - Реализация и приёмка: 04-delivery.md
   - Публикация: 05-documentation.md
   - Руководство по API: 06-api-guide.md
+  - Авторизация: 07-auth.md
+  - Развёртывание: 08-deployment.md
   - API: api.html
 plugins:
   - search
