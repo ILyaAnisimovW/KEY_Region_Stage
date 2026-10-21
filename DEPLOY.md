@@ -2,7 +2,7 @@
 
 `render.yaml` создаёт статический сайт и Node API на бесплатном Render. PostgreSQL размещается в Neon, а вход и регистрация — в бесплатном Keycloak realm Cloud-IAM. Не используйте бесплатную базу Render: она истекает через 30 дней.
 
-Текущий стенд: https://gourmet-box-web.onrender.com/ и https://gourmet-box-api.onrender.com/v1/health. Ветка деплоя — `codex/gourmet-free-deploy`. Для входа требуется закончить настройку клиента Keycloak ниже.
+Текущий стенд: https://gourmet-box-web.onrender.com/ и https://gourmet-box-api.onrender.com/v1/health. Ветка деплоя — `codex/gourmet-free-deploy`. Публичный клиент Keycloak `gourmet-box-web` создан, саморегистрация включена, а audience mapper добавляет `gourmet-box-api` в access token. Переход к форме регистрации проверен; сквозная проверка бронирования под отдельным покупателем ещё нужна.
 
 ## Перед созданием Render Blueprint
 
