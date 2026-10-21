@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    buildCommand: npm ci && npm run build --workspace @gourmet-box/api
+    buildCommand: npm ci --include=dev && npm run build --workspace @gourmet-box/api
     # Free Render services do not support a separate pre-deploy command.
     startCommand: node apps/api/dist/src/migrate.js && node apps/api/dist/src/main.js
     healthCheckPath: /v1/health
@@ -27,7 +27,7 @@ services:
   - type: web
     name: gourmet-box-web
     runtime: static
-    buildCommand: npm ci && npm run build --workspace @gourmet-box/web
+    buildCommand: npm ci --include=dev && npm run build --workspace @gourmet-box/web
     staticPublishPath: apps/web/dist
     routes:
       - type: rewrite
