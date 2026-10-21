@@ -3,6 +3,7 @@ export interface Principal { id: string; roles: Role[] }
 export interface OrderScope { buyerId: string; venueId: string }
 export interface VenueSummary { id: string; name: string }
 export interface AccessRepository {
+  registerBuyer(issuer: string, subject: string): Promise<Principal | undefined>;
   findPrincipal(issuer: string, subject: string): Promise<Principal | undefined>;
   hasMembership(userId: string, venueId: string): Promise<boolean>;
   findOrderScope(orderId: string): Promise<OrderScope | undefined>;

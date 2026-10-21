@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: gourmet-box-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci && npm run build --workspace @gourmet-box/api
+    # Free Render services do not support a separate pre-deploy command.
+    startCommand: node apps/api/dist/src/migrate.js && node apps/api/dist/src/main.js
+    healthCheckPath: /v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: OIDC_ISSUER
+        sync: false
+      - key: OIDC_JWKS_URL
+        sync: false
+      - key: OIDC_AUDIENCE
+        value: gourmet-box-api
+      - key: WEB_ORIGIN
+        sync: false
+      - key: PICKUP_CODE_KEY
+        generateValue: true
+
+  - type: web
+    name: gourmet-box-web
+    runtime: static
+    buildCommand: npm ci && npm run build --workspace @gourmet-box/web
+    staticPublishPath: apps/web/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_OIDC_ISSUER
+        sync: false

@@ -5,6 +5,7 @@ export interface AuthConfig {
   webOrigin: string;
   databaseUrl: string;
   port: number;
+  pickupCodeKey?: string;
 }
 export const AUTH_CONFIG = Symbol('AUTH_CONFIG');
 
@@ -33,5 +34,6 @@ export function loadConfig(env = process.env): AuthConfig {
   if (new URL(webOrigin).origin !== webOrigin) throw new Error('WEB_ORIGIN must be an origin without trailing slash');
   const port = Number(env.PORT ?? 3000);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid PORT');
-  return { issuer, audience: required('OIDC_AUDIENCE'), jwksUrl, webOrigin, databaseUrl: required('DATABASE_URL'), port };
+  if (production && (!env.PICKUP_CODE_KEY || env.PICKUP_CODE_KEY.length < 32)) throw new Error('PICKUP_CODE_KEY must contain at least 32 characters');
+  return { issuer, audience: required('OIDC_AUDIENCE'), jwksUrl, webOrigin, databaseUrl: required('DATABASE_URL'), port, pickupCodeKey: env.PICKUP_CODE_KEY };
 }

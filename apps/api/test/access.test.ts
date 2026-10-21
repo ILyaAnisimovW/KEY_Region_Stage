@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { Controller, Get, Module, Req, type INestApplication } from '@nestjs/common';
@@ -113,6 +114,53 @@ test('rejects unsigned, forged, expired, wrong issuer/audience, future nbf, miss
 });
 test('unprovisioned identity cannot get access', async () => {
   assert.equal((await request('me', await sign('not-provisioned'))).status, 403);
+});
+
+async function register(token?: string, body?: unknown, key: string | null = randomUUID()) {
+  return fetch(`${base}/v1/me/registration`, { method: 'POST', headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(key ? { 'Idempotency-Key': key } : {}),
+    ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+  }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+}
+
+test('self-registration requires a valid identity and a UUID idempotency key', async () => {
+  assert.equal((await register()).status, 401);
+  assert.equal((await register('invalid.jwt.signature')).status, 401);
+  const token = await sign('signup-validation');
+  assert.equal((await register(token, undefined, null)).status, 400);
+  assert.equal((await register(token, undefined, 'invalid')).status, 400);
+  assert.equal((await register(token, { roles:['STAFF'], password:'must-not-be-stored' })).status, 400);
+  assert.equal((await db.query('SELECT id FROM app_users WHERE subject=$1', ['signup-validation'])).rows.length, 0);
+});
+
+test('new identities explicitly register as BUYER and retries create only one account', async () => {
+  const subject = 'self-registered-buyer';
+  const token = await sign(subject, { roles:['STAFF'], realm_access:{roles:['STAFF']} });
+  assert.equal((await request('me', token)).status, 403);
+  const responses = await Promise.all([register(token), register(token), register(token)]);
+  assert.ok(responses.every(r => r.status === 200));
+  const users = await Promise.all(responses.map(r => r.json()));
+  assert.ok(users.every(u => u.id === users[0].id));
+  assert.deepEqual(users[0].roles, ['BUYER']); assert.deepEqual(users[0].venues, []);
+  assert.equal((await request('me', token)).status, 200);
+  assert.equal((await request(`probe/venues/${venue}`, token)).status, 403);
+  assert.equal((await db.query('SELECT id FROM app_users WHERE issuer=$1 AND subject=$2', [config.issuer,subject])).rows.length, 1);
+});
+
+test('registration preserves existing staff roles and assigned venues', async () => {
+  const response = await register(tokens[seller]);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { id:seller, roles:['STAFF'], venues:[{id:venue,name:'Demo'}] });
+});
+
+test('registration cannot reactivate a disabled account', async () => {
+  await db.query('UPDATE app_users SET active=false WHERE id=$1', [otherBuyer]);
+  try {
+    assert.equal((await register(tokens[otherBuyer])).status, 403);
+    const { rows } = await db.query<{active:boolean;roles:string[]}>('SELECT active,roles FROM app_users WHERE id=$1', [otherBuyer]);
+    assert.equal(rows[0]?.active, false); assert.deepEqual(rows[0]?.roles, ['BUYER']);
+  } finally { await db.query('UPDATE app_users SET active=true WHERE id=$1', [otherBuyer]); }
 });
 test('BUYER alone can create/list personal orders; supplied buyerId never changes principal', async () => {
   const res = await request(`probe/buyer?buyerId=${otherBuyer}`, tokens[buyer]);

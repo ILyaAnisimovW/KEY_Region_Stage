@@ -7,6 +7,7 @@
     "test": "npm run test --workspace @gourmet-box/api",
     "dev:api": "npm run dev --workspace @gourmet-box/api",
     "dev:web": "npm run dev --workspace @gourmet-box/web",
-    "demo:setup": "node scripts/setup-demo.mjs"
+    "demo:setup": "node scripts/setup-demo.mjs",
+    "demo:configure": "node --env-file=.env scripts/configure-keycloak.mjs"
   }
 }

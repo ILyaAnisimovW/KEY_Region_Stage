@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { AccessRepository, Principal, OrderScope, Role, VenueSummary } from './types.js';
 
 export interface SqlClient {
@@ -6,6 +7,14 @@ export interface SqlClient {
 
 export class PgAccessRepository implements AccessRepository {
   constructor(private readonly db: SqlClient) {}
+  async registerBuyer(issuer: string, subject: string): Promise<Principal | undefined> {
+    // The unique identity is the idempotency boundary. Existing roles and disabled
+    // accounts are deliberately left untouched, including on concurrent retries.
+    await this.db.query(
+      "INSERT INTO app_users(id,issuer,subject,roles) VALUES($1,$2,$3,ARRAY['BUYER']::text[]) ON CONFLICT (issuer,subject) DO NOTHING",
+      [randomUUID(), issuer, subject]);
+    return this.findPrincipal(issuer, subject);
+  }
   async findPrincipal(issuer: string, subject: string): Promise<Principal | undefined> {
     const { rows } = await this.db.query(
       'SELECT id, roles FROM app_users WHERE issuer=$1 AND subject=$2 AND active=true', [issuer, subject]);

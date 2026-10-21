@@ -5,7 +5,7 @@ import { AUTH_CONFIG, type AuthConfig } from '../../config.js';
 import { OPERATION, policies } from './policies.js';
 import { ACCESS_REPOSITORY, type AccessRepository, type Principal } from './types.js';
 import { TokenVerifier } from './token-verifier.js';
-export interface AuthRequest extends Request { principal?: Principal; requestId: string }
+export interface AuthRequest extends Request { principal?: Principal; identity?: { issuer: string; subject: string }; requestId: string }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 @Injectable()
@@ -27,6 +27,8 @@ export class AccessGuard implements CanActivate {
     const match = authorization?.match(/^Bearer ([A-Za-z0-9_.-]+)$/i);
     if (!match || match[1]!.length > 16384) throw new UnauthorizedException('Bearer token required');
     const subject = await this.verifier.verify(match[1]!);
+    req.identity = { issuer: this.config.issuer, subject };
+    if (policy === 'identity') return true;
     const principal = await this.repository.findPrincipal(this.config.issuer, subject);
     if (!principal) throw new ForbiddenException('Account is not provisioned or is disabled');
     req.principal = principal;
