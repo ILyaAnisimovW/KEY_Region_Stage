@@ -24,7 +24,8 @@ async function request<T>(path: string, init: RequestInit = {}, protectedRoute =
     headers.set('Authorization', `Bearer ${user.access_token}`);
   }
   if (init.body) headers.set('Content-Type', 'application/json');
-  const response = await fetch(`${base}${path}`, { ...init, headers, cache: 'no-store', signal: AbortSignal.timeout(10000) });
+  // A free API instance may need about a minute to wake after inactivity.
+  const response = await fetch(`${base}${path}`, { ...init, headers, cache: 'no-store', signal: AbortSignal.timeout(75000) });
   if (!response.ok) {
     const data = await response.json().catch(() => null) as { message?: string } | null;
     if (response.status === 409) throw new Error(data?.message || 'Бокс уже недоступен. Обновите каталог.');

@@ -25,7 +25,7 @@ export async function getMe(): Promise<Me> {
   if (!user || user.expired) user = await auth.signinSilent();
   if (!user) throw new Error('Сессия завершена. Войдите снова.');
   let response = await fetch(`${apiUrl}/me`, {
-    headers: { Authorization: `Bearer ${user.access_token}` }, cache: 'no-store', signal: AbortSignal.timeout(8000),
+    headers: { Authorization: `Bearer ${user.access_token}` }, cache: 'no-store', signal: AbortSignal.timeout(75000),
   });
   if (response.status === 401) {
     await auth.removeUser();
@@ -34,7 +34,7 @@ export async function getMe(): Promise<Me> {
   if (response.status === 403) {
     response = await fetch(`${apiUrl}/me/registration`, {
       method: 'POST', headers: { Authorization: `Bearer ${user.access_token}`, 'Idempotency-Key': crypto.randomUUID() },
-      cache: 'no-store', signal: AbortSignal.timeout(8000),
+      cache: 'no-store', signal: AbortSignal.timeout(75000),
     });
     if (response.status === 403) {
       await auth.removeUser();

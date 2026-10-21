@@ -106,8 +106,33 @@ export class BookingController {
   private readonly offerSelect = 'SELECT o.id,o.venue_id,v.name AS venue_name,v.address,d.* FROM offers o JOIN offer_details d ON d.offer_id=o.id JOIN venues v ON v.id=o.venue_id';
   private readonly orderSelect = 'SELECT o.id,o.buyer_id,o.venue_id,v.name AS venue_name,v.address,d.* FROM orders o JOIN order_details d ON d.order_id=o.id JOIN venues v ON v.id=o.venue_id';
 
+  private async ensureDemoOffer() {
+    if (process.env.DEMO_CATALOG !== '1') return;
+    const venueId = '20000000-0000-4000-8000-000000000099';
+    await this.transaction(async client => {
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('gourmet-box-demo-catalog'))");
+      await client.query(`INSERT INTO venues(id,name,address,timezone)
+        VALUES($1,'Gourmet Box · демо','Тестовый заказ — реальной выдачи нет','Europe/Samara')
+        ON CONFLICT (id) DO NOTHING`, [venueId]);
+      const last = await client.query(`SELECT d.pickup_window_end FROM offers o
+        JOIN offer_details d ON d.offer_id=o.id WHERE o.venue_id=$1
+        ORDER BY d.created_at DESC LIMIT 1`, [venueId]);
+      if (last.rows[0] && new Date(last.rows[0].pickup_window_end).getTime() > Date.now() + 15 * MINUTE) return;
+      const id = randomUUID();
+      const start = new Date(Date.now() + 30 * MINUTE);
+      const end = new Date(Date.now() + 150 * MINUTE);
+      await client.query('INSERT INTO offers(id,venue_id) VALUES($1,$2)', [id, venueId]);
+      await client.query(`INSERT INTO offer_details(offer_id,title,items,total_boxes,price_minor,original_price_minor,pickup_window_start,pickup_window_end,expires_at,storage_confirmed)
+        VALUES($1,$2,$3::jsonb,$4,$5,$6,$7,$8,$9,true)`, [id, 'Тестовый бокс с выпечкой · без выдачи', JSON.stringify([
+          { name: 'Круассан сливочный', quantity: 3, allergens: 'Глютен, молоко, яйца' },
+          { name: 'Булочка с корицей', quantity: 2, allergens: 'Глютен, молоко' },
+        ]), 8, 20000, 50000, start, end, new Date(end.getTime() + 90 * MINUTE)]);
+    });
+  }
+
   @Get('offers') @OperationAccess('listOffers')
   async listOffers() {
+    await this.ensureDemoOffer();
     const { rows } = await this.db.query(`${this.offerSelect} WHERE d.status='PUBLISHED' AND d.total_boxes>d.reserved_boxes+d.fulfilled_boxes AND d.pickup_window_end>=now()+interval '15 minutes' ORDER BY d.pickup_window_end ASC LIMIT 50`);
     return { items: rows.map(offer), nextCursor: null };
   }

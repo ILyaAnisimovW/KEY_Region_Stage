@@ -11,6 +11,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DEMO_CATALOG
+        value: "1"
       - key: DATABASE_URL
         sync: false
       - key: OIDC_ISSUER
