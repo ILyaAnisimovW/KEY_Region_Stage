@@ -7,8 +7,14 @@ import { Catalog, MyBookings, StaffBookings } from './BookingViews';
 const BakeryScene = React.lazy(() => import('./BakeryScene'));
 
 let callbackError = '';
+let postAuthPage: 'home' | 'account' = 'account';
 if (location.pathname === '/callback') {
-  try { await auth.signinRedirectCallback(); }
+  try {
+    const response = await auth.signinRedirectCallback();
+    if (response.state && typeof response.state === 'object' && 'intent' in response.state && response.state.intent === 'register') {
+      postAuthPage = 'home';
+    }
+  }
   catch (e) {
     localStorage.removeItem(SESSION_HINT);
     const code = e && typeof e === 'object' && 'error' in e ? e.error : '';
@@ -68,7 +74,7 @@ function App(){
       await auth.signinRedirect({prompt:'none',state:{intent:'restore'}});
       return;
     }
-    if(user){const result=await getMe();if(live){localStorage.setItem(SESSION_HINT,'1');setMe(result);setPage('account');setName(String(user.profile.given_name||user.profile.preferred_username||'Друг'));}}
+    if(user){const result=await getMe();if(live){localStorage.setItem(SESSION_HINT,'1');setMe(result);setPage(postAuthPage);setName(String(user.profile.given_name||user.profile.preferred_username||'Друг'));}}
   }catch(e){if(live)setError(e instanceof Error?e.message:'Не удалось проверить доступ.');}finally{if(live)setBusy(null);}})();
   return()=>{live=false;auth.events.removeUserUnloaded(expired);auth.events.removeSilentRenewError(expired);};
  },[]);
