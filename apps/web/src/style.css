@@ -168,6 +168,9 @@
 @media(prefers-reduced-motion:reduce){.menu-overlay,.menu-backdrop,.mobile-menu,.menu-links button,.home-page .step,.home-page .paper-receipt{transition:none!important}.home-page .faq-list details p{animation:none}}
 @media(max-width:860px) and (min-width:641px){.home-page .benefits-inner{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 25px}.home-page .benefits-inner>span:last-child{grid-column:1/-1}.home-page .steps-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.home-page .step:last-child{grid-column:1/-1;min-height:220px}.home-page .business-panel{grid-template-columns:1fr;gap:0}.home-page .business-art{min-height:300px}.home-page .paper-receipt{width:260px}}
 @media(max-width:640px){.home-page .benefits-inner{grid-template-columns:1fr}.home-page .benefits-inner>span:last-child{grid-column:auto}.home-page .steps-grid{grid-template-columns:1fr}.home-page .step:last-child{grid-column:auto}}
+/* Keep the business message inside narrow phone viewports. */
+.home-page .business-panel>div{min-width:0}
+@media(max-width:640px){.home-page .business-panel{grid-template-columns:minmax(0,1fr)}.home-page .business-panel h2{font-size:clamp(28px,8vw,38px);overflow-wrap:anywhere;line-height:1.02}.home-page .business-panel p:not(.eyebrow){overflow-wrap:break-word}}
 @media(min-width:861px){.home-page .hero-bottom,.home-page .benefits-strip{display:none}}
 
 /* Catalog and account share the cinematic palette of the landing page. */
