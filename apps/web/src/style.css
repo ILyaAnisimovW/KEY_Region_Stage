@@ -171,6 +171,22 @@
 /* Keep the business message inside narrow phone viewports. */
 .home-page .business-panel>div{min-width:0}
 @media(max-width:640px){.home-page .business-panel{grid-template-columns:minmax(0,1fr)}.home-page .business-panel h2{font-size:clamp(28px,8vw,38px);overflow-wrap:anywhere;line-height:1.02}.home-page .business-panel p:not(.eyebrow){overflow-wrap:break-word}}
+/* Android uses a wider fallback than Impact: allow the headline to wrap and keep each section clear. */
+@media(max-width:640px){
+  .hero-cinematic h1{font-family:Arial,sans-serif;font-size:clamp(39px,10.8vw,48px);white-space:normal;line-height:1.02;letter-spacing:-.045em;overflow-wrap:normal}
+  .hero-cinematic .hero-copy{min-width:0}
+  .hero-cinematic .hero-note{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 8px;color:#c9d0c2;font-size:11px;line-height:1.45;margin-top:23px}
+  .hero-cinematic .hero-note span{grid-column:2;border:0;margin:0;padding:0}
+  .hero-product{height:300px;margin:18px -14px 0}
+  .hero-product .product-vertical{bottom:12px}
+  .home-page .business-art{min-height:400px;margin-top:34px}
+  .home-page .paper-receipt{width:min(230px,100%);padding:23px 20px;transform:rotate(5deg)}
+  .home-page .business-panel:hover .paper-receipt{transform:rotate(5deg)}
+  .home-page .business-panel small{line-height:1.5}
+  .home-page .final-cta{margin-bottom:36px}
+  .home-page .final-cta h2{font-family:Arial,sans-serif;font-size:clamp(28px,8.2vw,34px);line-height:1.07;overflow-wrap:normal}
+  .site-footer.home-footer{padding-bottom:calc(105px + env(safe-area-inset-bottom))}
+}
 @media(min-width:861px){.home-page .hero-bottom,.home-page .benefits-strip{display:none}}
 
 /* Catalog and account share the cinematic palette of the landing page. */
