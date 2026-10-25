@@ -10,7 +10,7 @@ const localInput = (value: Date, round: 'ceil' | 'floor' = 'ceil') => {
 };
 const errorText = (error: unknown) => error instanceof Error ? error.message : 'Попробуйте ещё раз.';
 const labels: Record<Booking['status'], string> = { RESERVED: 'Ожидает выдачи', FULFILLED: 'Выдан', CANCELLED: 'Отменён', NO_SHOW: 'Не забран' };
-const offerImage = (title: string) => title.startsWith('Фруктовый бокс') ? '/images/fruit-box.svg' : title.startsWith('Сэндвич-набор') ? '/images/sandwich-box.svg' : '/images/bakery-hero-photo.png';
+const offerImage = (title: string) => title.startsWith('Фруктовый бокс') ? '/images/fruit-box-photo.webp' : title.startsWith('Сэндвич-набор') ? '/images/sandwich-box-photo.webp' : '/images/bakery-hero-photo.png';
 
 export function Catalog({ canBook, onLogin, onBooked }: { canBook: boolean; onLogin: () => void; onBooked: () => void }) {
   const [offers, setOffers] = useState<Offer[]>([]), [selected, setSelected] = useState<Offer | null>(null);
