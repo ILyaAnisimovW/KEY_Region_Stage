@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" role="img" aria-label="Иллюстрация фруктового бокса">
+  <defs>
+    <radialGradient id="bg"><stop stop-color="#344235"/><stop offset="1" stop-color="#121b16"/></radialGradient>
+    <linearGradient id="box" x2="0" y2="1"><stop stop-color="#caa978"/><stop offset="1" stop-color="#8f6e4a"/></linearGradient>
+    <radialGradient id="apple"><stop stop-color="#efbd70"/><stop offset="1" stop-color="#d45c45"/></radialGradient>
+    <radialGradient id="pear"><stop stop-color="#e9dc8b"/><stop offset="1" stop-color="#94a24e"/></radialGradient>
+  </defs>
+  <rect width="600" height="400" fill="url(#bg)"/>
+  <ellipse cx="300" cy="338" rx="238" ry="38" fill="#0b100b" opacity=".55"/>
+  <path d="M90 135 305 92 528 143 485 313 281 360 116 311Z" fill="url(#box)" stroke="#e8cba0" stroke-width="5"/>
+  <path d="M90 135 305 92 528 143 301 190Z" fill="#dfc095"/>
+  <path d="M116 311 281 360 301 190 90 135Z" fill="#9d7953"/>
+  <path d="M281 360 485 313 528 143 301 190Z" fill="#ab8359"/>
+  <path d="M138 171 305 135 480 169 448 286 282 324 154 284Z" fill="#f1e5ca"/>
+  <circle cx="215" cy="209" r="52" fill="url(#apple)"/>
+  <circle cx="366" cy="198" r="48" fill="url(#apple)"/>
+  <path d="M206 156q-5-20 8-31m151 28q-3-20 11-30" fill="none" stroke="#634731" stroke-width="7" stroke-linecap="round"/>
+  <path d="M214 148q-28-30-43-6 21 16 43 6m158 2q17-31 37-16-11 21-37 16" fill="#78a255"/>
+  <path d="M255 230q-32 9-28 44 5 39 44 40 39 1 47-38 5-27-21-42l-7-33h-27Z" fill="url(#pear)"/>
+  <path d="M391 238q-35 4-37 40 0 38 39 39 41-1 43-39 1-26-20-40l-7-29h-21Z" fill="url(#pear)"/>
+  <path d="M288 226q-5-20 12-30m109 38q0-20 16-28" fill="none" stroke="#58613e" stroke-width="6" stroke-linecap="round"/>
+  <path d="M163 245q45 88 105 55" fill="none" stroke="#eac649" stroke-width="24" stroke-linecap="round"/>
+  <path d="M171 241q39 72 84 51" fill="none" stroke="#fff0a6" stroke-width="9" stroke-linecap="round"/>
+</svg>

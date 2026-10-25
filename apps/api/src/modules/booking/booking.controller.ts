@@ -114,19 +114,34 @@ export class BookingController {
       await client.query(`INSERT INTO venues(id,name,address,timezone)
         VALUES($1,'Gourmet Box · демо','Тестовый заказ — реальной выдачи нет','Europe/Samara')
         ON CONFLICT (id) DO NOTHING`, [venueId]);
-      const last = await client.query(`SELECT d.pickup_window_end FROM offers o
-        JOIN offer_details d ON d.offer_id=o.id WHERE o.venue_id=$1
-        ORDER BY d.created_at DESC LIMIT 1`, [venueId]);
-      if (last.rows[0] && new Date(last.rows[0].pickup_window_end).getTime() > Date.now() + 15 * MINUTE) return;
-      const id = randomUUID();
-      const start = new Date(Date.now() + 30 * MINUTE);
-      const end = new Date(Date.now() + 150 * MINUTE);
-      await client.query('INSERT INTO offers(id,venue_id) VALUES($1,$2)', [id, venueId]);
-      await client.query(`INSERT INTO offer_details(offer_id,title,items,total_boxes,price_minor,original_price_minor,pickup_window_start,pickup_window_end,expires_at,storage_confirmed)
-        VALUES($1,$2,$3::jsonb,$4,$5,$6,$7,$8,$9,true)`, [id, 'Тестовый бокс с выпечкой · без выдачи', JSON.stringify([
+      const demoBoxes = [
+        { title: 'Тестовый бокс с выпечкой · без выдачи', items: [
           { name: 'Круассан сливочный', quantity: 3, allergens: 'Глютен, молоко, яйца' },
           { name: 'Булочка с корицей', quantity: 2, allergens: 'Глютен, молоко' },
-        ]), 8, 20000, 50000, start, end, new Date(end.getTime() + 90 * MINUTE)]);
+        ], price: 20000, originalPrice: 50000 },
+        { title: 'Фруктовый бокс · без выдачи', items: [
+          { name: 'Яблоко', quantity: 2, allergens: 'Аллергены не заявлены (демо)' },
+          { name: 'Груша', quantity: 2, allergens: 'Аллергены не заявлены (демо)' },
+          { name: 'Банан', quantity: 1, allergens: 'Аллергены не заявлены (демо)' },
+        ], price: 18000, originalPrice: 36000 },
+        { title: 'Сэндвич-набор · без выдачи', items: [
+          { name: 'Сэндвич с курицей', quantity: 2, allergens: 'Глютен, молоко, яйца' },
+          { name: 'Овощной ролл', quantity: 1, allergens: 'Глютен' },
+        ], price: 29000, originalPrice: 62000 },
+      ];
+      for (const box of demoBoxes) {
+        const active = await client.query(`SELECT 1 FROM offers o JOIN offer_details d ON d.offer_id=o.id
+          WHERE o.venue_id=$1 AND d.title=$2 AND d.status='PUBLISHED'
+            AND d.total_boxes>d.reserved_boxes+d.fulfilled_boxes
+            AND d.pickup_window_end>now()+interval '15 minutes' LIMIT 1`, [venueId, box.title]);
+        if (active.rowCount) continue;
+        const id = randomUUID();
+        const start = new Date(Date.now() + 30 * MINUTE);
+        const end = new Date(Date.now() + 150 * MINUTE);
+        await client.query('INSERT INTO offers(id,venue_id) VALUES($1,$2)', [id, venueId]);
+        await client.query(`INSERT INTO offer_details(offer_id,title,items,total_boxes,price_minor,original_price_minor,pickup_window_start,pickup_window_end,expires_at,storage_confirmed)
+          VALUES($1,$2,$3::jsonb,$4,$5,$6,$7,$8,$9,true)`, [id, box.title, JSON.stringify(box.items), 8, box.price, box.originalPrice, start, end, new Date(end.getTime() + 90 * MINUTE)]);
+      }
     });
   }
 

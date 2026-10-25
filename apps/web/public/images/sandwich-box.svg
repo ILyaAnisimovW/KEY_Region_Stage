@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" role="img" aria-label="Иллюстрация бокса с сэндвичами">
+  <defs>
+    <radialGradient id="bg"><stop stop-color="#394136"/><stop offset="1" stop-color="#111915"/></radialGradient>
+    <linearGradient id="bread" x2="0" y2="1"><stop stop-color="#f5d88d"/><stop offset="1" stop-color="#bf8245"/></linearGradient>
+  </defs>
+  <rect width="600" height="400" fill="url(#bg)"/>
+  <ellipse cx="302" cy="336" rx="240" ry="38" fill="#080d09" opacity=".55"/>
+  <path d="M80 143 300 91 526 146 487 318 290 358 109 310Z" fill="#b79163" stroke="#e2c296" stroke-width="5"/>
+  <path d="M80 143 300 91 526 146 292 196Z" fill="#d9b88a"/>
+  <path d="M109 310 290 358 292 196 80 143Z" fill="#96714c"/>
+  <path d="M290 358 487 318 526 146 292 196Z" fill="#a17b52"/>
+  <path d="M130 177 300 135 476 177 452 292 290 326 143 283Z" fill="#f0e6d0"/>
+  <g transform="rotate(-10 230 220)">
+    <path d="M145 258 220 145 301 261Z" fill="#ba7041"/>
+    <path d="M149 249 220 157 297 252Z" fill="#f0d48a"/>
+    <path d="M156 242 219 173 289 244Z" fill="#6c984d"/>
+    <path d="M162 231 220 180 282 234Z" fill="#d78d52"/>
+    <path d="M145 257 220 145 300 260" fill="none" stroke="#f8e2a8" stroke-width="10" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(188 -22) rotate(13 230 220)">
+    <path d="M145 258 220 145 301 261Z" fill="#ba7041"/>
+    <path d="M149 249 220 157 297 252Z" fill="#f0d48a"/>
+    <path d="M156 242 219 173 289 244Z" fill="#78a454"/>
+    <path d="M162 231 220 180 282 234Z" fill="#d78d52"/>
+    <path d="M145 257 220 145 300 260" fill="none" stroke="#f8e2a8" stroke-width="10" stroke-linejoin="round"/>
+  </g>
+  <g transform="rotate(13 339 275)">
+    <rect x="285" y="257" width="120" height="49" rx="23" fill="#dbb783" stroke="#ac7a49" stroke-width="5"/>
+    <path d="M297 275q15-14 31 1t29 0q16-13 33-1" fill="none" stroke="#74a05b" stroke-width="11"/>
+  </g>
+</svg>
